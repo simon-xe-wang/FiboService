@@ -22,7 +22,7 @@ def index():
     """
     sn = request.args.get('sn')
     if not sn:
-        abort(400, "SN in query parameter is required")
+        abort(400, "SN is required. Try https://myfibo.herokuapp.com/?sn=<number>")
     try:
         sn = int(sn)
         if sn < 0 or sn > MAX_SN:
