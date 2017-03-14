@@ -1,5 +1,5 @@
 from flask import Flask
-fiboApp = Flask('fib')
+fibo_app = Flask('fib')
 
 from app import fibo
 
