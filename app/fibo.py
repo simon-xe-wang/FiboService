@@ -4,7 +4,7 @@ from flask import abort
 from flask import Response
 import cProfile
 
-@fiboApp.route('/')
+@fiboApp.route('/fibo')
 def index():
     sn = request.args.get('sn')
     if not sn:
