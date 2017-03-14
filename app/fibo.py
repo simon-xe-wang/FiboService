@@ -47,8 +47,3 @@ def build_seq(sn):
         seq.append(str(a))
         a, b = b, a+b
     return seq
-
-if __name__ == '__main__': # for profiling where is the time consumer.
-    import cProfile
-    cProfile.run('for n in fibo.generate_seq(10000): pass')
-
