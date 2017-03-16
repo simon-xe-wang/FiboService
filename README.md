@@ -75,3 +75,37 @@ According to the observation above, the bad performance comes from the conversio
 
 
 ## More Ideas
+As converting number to string is the main time consuer so I think caching values in string should help making performance better. Below is some options in my mind. 
+
+One host can cache limited amount of fibo values. Here I assume the up amount is 100, 000, which takes around over 1GB memory. 
+* Method1: Using array or map to cache all data. It looks like:
+```
+fibo_cache_array: ['0', '1', '1', '2', '3', '5', ...]
+fibo_cache_map: {0: '0', 1: '1', 2: '1', 3: '2', 4: '3', 5: '5', ...}
+```
+
+Everytime getting a request with input number, get all the string values and return to client in streaming way until reaching input value. Using array is preferable since index access is faster than hash query.
+
+* Method2: Put stream of sequence into disk and build a index table in memory
+The idea is creating one or more files on disk to save the whole fibo sequence in order, and creating an index table in memory which indicates the file and the offset for each number, which looks like:
+```
+file1:  0 1 1 2 3 5 8 13 21 34 55 89 ...        # separated by ' ' 
+...
+
+index table {0: 1, 1:2, 2: 4, 3: <offset>, ... }
+```
+So if input number is 4, just read the file from the begining of the file to the offset directly. The benefit is we don't have hold all sequence in memory. The index table is much smaller (16 bytes*1M) so that one host can handle more numbers. 
+
+The performance of this should be fine, specially when the network bandwidth between user and server is lower than disk bandwidth. 
+
+The ways above work in signle process and single host. In multiple processes and multiple hosts environment, we need to think about the following things (Some I have not thought them through):
+
+Questions for multiple processes:
+1. Supposing I'm talking about the method 2 above, the data file can be shared across processes, but index table can't. How should share index table ?  
+
+Questions for multiple hosts:
+2. The length of each fibo value is variable, how we split data into servers evenly? 
+3. How an API server knows which storage server should go to get data. 
+4. One server storing particular range of data might become hotspot, how to resolve. 
+5. The cache on disk could be pre populated or dynamically on demand. Which one is better? 
+
