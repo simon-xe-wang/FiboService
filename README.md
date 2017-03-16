@@ -23,7 +23,7 @@ You can use browswer or curl as client for try:
 Here is what I thought about when implementing this service at first.
 1. Streaming sequence response. Streaming is always required for response with large size, although in this demo the response size is only ~1MB. 
 2. Flask itself is not running in concurrent way. When deploy this in production environment, Gunicorn (or other WSGI server) is required to support multiple users.
-3. Why has maxinum input number: I tried with 100,000, it took ~15 minutes to return. See the section of [Performance](Performance) for further analysis. I also have some thoughts on performance improvement, see [More Ideas](./More Ideas). For now let me leave this simple implementation with the limitation of max input number to 10, 000. 
+3. Why has maxinum input number: I tried with 100,000, it took ~15 minutes to return. See the section of [Performance](#performance) for further analysis. I also have some thoughts on performance improvement, see [More Ideas](#more-ideas). For now let me leave this simple implementation with the limitation of max input number to 10, 000. 
 
 ## Performance
 The test below indicates that the convertion from big num to string is the major time consumer. Here is the code for testing:
@@ -71,7 +71,7 @@ Here is what I found
         1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
 ```
 
-According to the observation above, the bad performance comes from the conversion from bigint to string. If we can cache the fibonacci value or sequence somewhere as string, it will help on performance. Discuss this on the section of [More Ideas](More Ideas) 
+According to the observation above, the bad performance comes from the conversion from bigint to string. If we can cache the fibonacci value or sequence somewhere as string, it will help on performance. Discuss this on the section of [More Ideas](#more-ideas) 
 
 
 ## More Ideas
