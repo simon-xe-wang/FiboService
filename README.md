@@ -98,13 +98,13 @@ So if input number is 4, just read the file from the begining of the file to the
 
 The performance of this should be fine, specially when the network bandwidth between user and server is lower than disk bandwidth. 
 
-The ways above work in signle process and single host. In multiple processes and multiple hosts environment, we need to think about the following things (Some I have not thought them through):
+The ways above work in signle process and single host. To extend that to to multiple processes and multiple hosts environment, the following questions to answer (some I have not thought them through):
 
-Questions for multiple processes:
+For multiple processes:
 
 1. Supposing I'm talking about the method 2 above, the data file can be shared across processes, but index table can't. How should share index table ?  
 
-Questions for multiple hosts:
+For multiple hosts:
 
 2. The length of each fibo value is variable, how we split data into servers evenly? 
 3. How an API server knows which storage server should go to get data. 
