@@ -101,9 +101,11 @@ The performance of this should be fine, specially when the network bandwidth bet
 The ways above work in signle process and single host. In multiple processes and multiple hosts environment, we need to think about the following things (Some I have not thought them through):
 
 Questions for multiple processes:
+
 1. Supposing I'm talking about the method 2 above, the data file can be shared across processes, but index table can't. How should share index table ?  
 
 Questions for multiple hosts:
+
 2. The length of each fibo value is variable, how we split data into servers evenly? 
 3. How an API server knows which storage server should go to get data. 
 4. One server storing particular range of data might become hotspot, how to resolve. 
