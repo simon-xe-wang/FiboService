@@ -21,9 +21,9 @@ You can use browswer or curl as client for try:
 
 ## Implementation Considerations
 Here is what I thought about when implementing this service at first.
-1. Streaming sequence response. Streaming is always required for response with large size, although in this demo the response size is only ~1MB. 
+1. Streaming sequence response. Streaming is always best practice for large size of response, although in this demo the response size is only ~1MB and works even without streaming. 
 2. Flask itself is not running in concurrent way. When deploy this in production environment, Gunicorn (or other WSGI server) is required to support multiple users.
-3. Why has maxinum input number: I tried with 100,000, it took ~15 minutes to return. See the section of [Performance](#performance) for further analysis. I also have some thoughts on performance improvement, see [More Ideas](#more-ideas). For now let me leave this simple implementation with the limitation of max input number to 10, 000. 
+3. Why has maxinum input number: I tried with 100,000 as input and it took ~15 minutes to return. See the section of [Performance](#performance) for further analysis. I also have some thoughts on performance improvement, see [More Ideas](#more-ideas). For now let me leave this simple implementation with the limitation of max input number to 10, 000. 
 
 ## Performance
 The test below indicates that the convertion from big num to string is the major time consumer. Here is the code for testing:
