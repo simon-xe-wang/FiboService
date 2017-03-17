@@ -33,7 +33,7 @@ Given a negative number, float or any non-numeric, it will respond with "400 Bad
 ## Implementation Considerations
 Flask development server works in single process mode. What I implemented here is only applicapable for single process. We will discuss multi process and distributed solution in [More Ideas](#more ideas)
 
-The first version I did is very simple. I used a generator to generate each fibonacci value string and Flask sends each one in streaming way. This works well for small input number like 10,000. When I tried 100,000. It took about 20 minutes, too bad!
+The first version I did is simple. I used a generator to generate each fibonacci value string and Flask sends each one in streaming way. This works well for small input number like 10,000. When I tried 100,000. It took about 20 minutes. 
 
 The tests below indicates the conversion from bignum to int is the performance killer:
 
@@ -88,11 +88,11 @@ Then I wrote version 2 which caches the fibonacci value string in a list. Assumi
 fibo_list: ['0', '1', '1', '2', '3', '5', ...]
 ```
 
-Everytime getting a request with input number, get each string from the cache directly and return to client until reaching input value. If required values are not in cache, populate them. 
+Every time getting a request with input number, starting from 0, get corresponding string for each number from the cache and write to response in streaming way until reaching the input value. If required values are not in cache, populate them before return. 
 
 The first request of asking big number like 100,000 is still very slow (20 minutes) but the followings will be fast (6 seconds). 
 
-This works well for single process. The drawback is:
+This works well for single process. The drawbacks are:
 1. Cache locates within a process. Need to share with others.  
 2. Large memory usage might be an issue.
 
@@ -106,22 +106,25 @@ file1:  0 1 1 2 3 5 8 13 21 34 55 89 ...        # separated by ' '
 
 Index table {0: 1, 1:2, 2: 4, 3: <offset>, ... }
 ```
-This way we can read file from the begining to the offset for input number directly. So no need to hold all data in memory. The index table is much smaller. For example, holding 1M entries takes around 16MB (16 bytes*1M). 
+This way we can read file from the begining to the offset for input number directly. So no need to hold all data in memory. The index table takes much less memory. For example, holding 1M entries takes around 16MB 
+'''
+(8 bytes for key + 8 bytes for offset) * 1 million = 16MB 
+'''
 
-The performance of this should be fine, specially when the network bandwidth between user and server is lower than disk bandwidth. 
+The performance of this should be fine, specially when the network bandwidth between client and server is lower than disk bandwidth. 
 
 Both ways would help on performance. To extend that to multiple processes and multiple hosts environment, there are the following questions to think about:
 
-(The questions below are for the way of caching data on disk, though fit for cache in memory)
+(The questions below are for the way of caching data on disk, fit for cache in memory though)
 
 For multiple processes:
 
-1. The data file can be shared across processes, but index table can't. Shall we use multiprocessing.Manager to store index table ?  
+1. The data file on disk can be shared across processes. Need to find a way (multiprocessing.Manager.dict?) to hold index table and share across processes.  
 
 For multiple hosts:
 
-2. The length of each fibo value is variable, how we split data into servers evenly? 
-3. How an API server knows which storage server should go to get data. 
-4. One server storing particular range of data might become hotspot, how to resolve. 
-5. The cache on disk could be pre populated or dynamically on demand. Which one is better? 
+2. Suppose we need to support very big fibo sequence (say sn = 1,000, 000, 000) and single host can't deal with that alone. How should we split sequence to multiple hosts? If we want to split evenly by size, as the length of each fibonacci value is variable, how?
+3. What changes need to make for index table to support multiple hosts? 
+4. If we split sequence by range (e.g. 1-100, 101-200, ...) Could some of servers become hotspot? and how to resolve? 
+5. The cache could be pre-populated or filled on demand. Which one is better? 
 
