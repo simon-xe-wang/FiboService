@@ -8,8 +8,7 @@ Demo is available on Heroku: https://myfibo.herokuapp.com/?sn=10. The max input 
 
 If you would like to run this service locally, Python 3.4+ and [Flask (0.1.2)](http://flask.pocoo.org/docs/0.12/installation/) are required. 
 ```
-pip install flask
-
+# pip install flask
 ```
 You might also want to use [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) to setup an isolated environment.
 
