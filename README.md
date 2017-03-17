@@ -1,8 +1,8 @@
 # FiboService
 ## About
-FiboService is a RESTful Web Service which provides Fibonacci sequence for given input number (start from 0). For now the max input is 10,000 for demo purpose. 
+FiboService is a RESTful Web Service which provides Fibonacci sequence for given input number (start from 0). For now the max input is 100,000 for demo purpose. 
 
-Demo is available on Heroku for demo: https://myfibo.herokuapp.com/?sn=10 (Note: you might see a delay for the first request as it falls into sleep after 30 minutes idle time)
+Demo is available on Heroku for demo: https://myfibo.herokuapp.com/?sn=10. Its max input is 10, 000 as the host only has 512MB memory (Note: you might see a delay for the first request as it falls into sleep after 30 minutes idle time)
 
 ## Prerequisites and Run
 
@@ -18,15 +18,15 @@ You can use browswer or curl as client for try:
 ```
 # curl -k https://myfibo.herokuapp.com/?sn=20
 ```
+Note: if input a large number like 100,000 for the first time, it's going to take 20 minutes to return. The time is spent on filling cache and the following requests will be fast (less than 10 seconds). 
 
 ## Implementation Considerations
-Here is what I thought about when implementing this service at first.
-1. Streaming sequence response. Streaming is always best practice for large size of response, although in this demo the response size is only ~1MB and works even without streaming. 
-2. Flask itself is not running in concurrent way. When deploy this in production environment, Gunicorn (or other WSGI server) is required to support multiple users.
-3. Why has maxinum input number: I tried with 100,000 as input and it took ~15 minutes to return. See the section of [Performance](#performance) for further analysis. I also have some thoughts on performance improvement, see [More Ideas](#more-ideas). For now let me leave this simple implementation with the limitation of max input number to 10, 000. 
+Flask built-in server works in single process mode. What I implemented here is only applicapable for single process. We will discuss multi process and distributed solution in [More Ideas](#more ideas)
 
-## Performance
-The test below indicates that the convertion from big num to string is the major time consumer. Here is the code for testing:
+The first version I did is very simple. I used a generator to generate each fibonacci value string and Flask send each one as response in streaming way. This works well for small input number like 10,000. When I tried 100,000. It took about 20 minutes, too bad!
+
+The tests below indicates the conversion from bignum to int is the performance killer:
+
 ```python
 def generate_seq(sn):
     """To stream fibo sequence returned """
@@ -42,9 +42,9 @@ if __name__ == '__main__':
     import cProfile
     cProfile.run('for n in generate_seq(100000): pass')
 ```
-Here is what I found
 1. This program with 100,000 as input took more than 10 minutes to finish. It's 1.45 seconds when I comments out the line of convertion.
 2. to_str() takes most of time (from output of cProfile and 10,000 as input):
+
 ```
       20004 function calls in 1.114 seconds
 
@@ -71,38 +71,42 @@ Here is what I found
         1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}
 ```
 
-According to the observation above, the bad performance comes from the conversion from bigint to string. If we can cache the fibonacci value or sequence somewhere as string, it will help on performance. Discuss this on the section of [More Ideas](#more-ideas) 
+Again, it's the conversion from bigint to string has bad performance and I don't find a good way to optimize it.
 
+Then I wrote version 2 which caches the fibonacci value string in a list. Assuming the maximum amount is 100, 000, which takes around over 1GB memory. It looks like
+```
+fibo_list: ['0', '1', '1', '2', '3', '5', ...]
+```
+
+Everytime getting a request with input number, get each string from the cache directly and return to client until reaching input value. If required values are not in cache, populate them. 
+
+The first request of asking big number like 100,000 is still very slow but the following will be fast. 
+
+This works well for single process. The cons is:
+1. Not work for multiple processes we need to put this into shared memory. 
+2. It uses much memory
+
+This is what I implemented for now. There are other ways which might work bette in distributed environment and we will discuss it next. 
 
 ## More Ideas
-As converting number to string is the main time consuer so I think caching values in string should help making performance better. Below is some options in my mind. 
 
-One host can cache limited amount of fibo values. Here I assume the up amount is 100, 000, which takes around over 1GB memory. 
-* Method1: Using array or map to cache all data. It looks like:
-```
-fibo_cache_array: ['0', '1', '1', '2', '3', '5', ...]
-fibo_cache_map: {0: '0', 1: '1', 2: '1', 3: '2', 4: '3', 5: '5', ...}
-```
-
-Everytime getting a request with input number, get all the string values and return to client in streaming way until reaching input value. Using array is preferable since index access is faster than hash query.
-
-* Method2: Put stream of sequence into disk and build a index table in memory
-The idea is creating one or more files on disk to save the whole fibo sequence in order, and creating an index table in memory which indicates the file and the offset for each number, which looks like:
+Another way is caching the stream of sequence into disk and build a index table in memory. The idea is creating one or more files on disk to save the fibo sequence in order, and creating an index table in memory which indicates the file and the offset for each number, which looks like:
 ```
 file1:  0 1 1 2 3 5 8 13 21 34 55 89 ...        # separated by ' ' 
-...
 
-index table {0: 1, 1:2, 2: 4, 3: <offset>, ... }
+Index table {0: 1, 1:2, 2: 4, 3: <offset>, ... }
 ```
-So if input number is 4, just read the file from the begining of the file to the offset directly. The benefit is we don't have hold all sequence in memory. The index table is much smaller (16 bytes*1M) so that one host can handle more numbers. 
+This way we can read file from the begining to the offset for input number directly. So no need to hold all data in memory. The index table is much smaller. For example, holding 1M entries takes around 16MB (16 bytes*1M). 
 
 The performance of this should be fine, specially when the network bandwidth between user and server is lower than disk bandwidth. 
 
-The ways above work in signle process and single host. To extend that to to multiple processes and multiple hosts environment, the following questions to answer (some I have not thought them through):
+Both ways would help on performance. To extend that to multiple processes and multiple hosts environment, there are the following questions to think about:
+
+(The questions below are for the way of caching data on disk, though fit for cache in memory)
 
 For multiple processes:
 
-1. Supposing I'm talking about the method 2 above, the data file can be shared across processes, but index table can't. How should share index table ?  
+1. The data file can be shared across processes, but index table can't. Shall we use multiprocessing.Manager to store index table ?  
 
 For multiple hosts:
 
