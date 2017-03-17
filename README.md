@@ -89,6 +89,8 @@ fibo_list: ['0', '1', '1', '2', '3', '5', ...]
 
 Every time getting a request with input number, starting from 0, get corresponding string for each number from the cache and write to response in streaming way until reaching the input value. If required values are not in cache, populate them before return. 
 
+Since this is only single process so lock is not required. It's needed when supporting multiple user.
+
 The first request of asking big number like 100,000 is still very slow (20 minutes) but the followings will be fast (6 seconds). 
 
 This works well for single process. The drawbacks are:
