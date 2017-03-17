@@ -11,14 +11,18 @@ from flask import request
 from flask import abort
 from flask import Response
 
-MAX_SN = 10000
+MAX_SN = 100000
+
+# Cache to hold the string of each fibo value
+_fibo_list = ['0', '1']
 
 @fibo_app.route('/')
 def index():
-    """The REST API which accepts input number and returns fibonacci sequence
+    """
+    The REST API which accepts input number and returns fibonacci sequence
 
-        To get a sequence user need to input https://myfibo.herokuapp.com/?sn=10
-        Query parameter sn indicates how many numbers should have in returned sequence
+    To get a sequence user need to input https://myfibo.herokuapp.com/?sn=10
+    Query parameter sn indicates how many numbers should have in returned sequence
     """
     sn = request.args.get('sn')
     if not sn:
@@ -30,20 +34,47 @@ def index():
     except ValueError:
         abort(400, "Invalid SN. It must be an integer.")
 
-    return Response(generate_seq(sn))
+    return Response(_generate_seq2(sn))
 
-def generate_seq(sn):
-    """To stream fibo sequence returned """
+def _generate_seq(sn):
+    """
+    The generate which generate the string of each fibo value directly
+    """
     a, b = 0, 1
     for i in range(sn):
         yield str(a) + ' '
         a, b = b, a+b
 
-def build_seq(sn):
-    """Return fibo sequence as a list. """
-    seq = []
-    a, b = 0, 1
-    for i in range(sn):
-        seq.append(str(a))
+def _generate_seq2(sn):
+    """
+    Another generator which uses cache to generate the string of each fibo value.
+    Fill cache first if the values are not in.
+    :param sn:
+    :return:
+    """
+    if sn > len(_fibo_list):
+        _fill_cache(sn)
+
+    for val in range(sn):
+        yield _fibo_list[val] + ' '
+
+def _fill_cache(sn):
+    '''
+    Fill cache with fibo strings from current length to sn
+    :param sn:
+    :return:
+    '''
+    a = int(_fibo_list[len(_fibo_list)-2])
+    b = int(_fibo_list[len(_fibo_list)-1])
+    for i in range(len(_fibo_list), sn):
         a, b = b, a+b
-    return seq
+        _fibo_list.append(str(b))
+
+def _clear_cache():
+    """
+    For testing purpose
+    :return:
+    """
+    _fibo_list.clear()
+    _fibo_list.append('0')
+    _fibo_list.append('1')
