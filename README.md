@@ -1,12 +1,17 @@
 # FiboService
 ## About
-FiboService is a RESTful Web Service which provides Fibonacci sequence for given input number (start from 0). For now the max input is 100,000 for demo purpose. 
+FiboService is a RESTful Web Service which provides Fibonacci sequence (start from 0) for given input number. For now the valid input range is 0 to 100,000. 
 
-Demo is available on Heroku for demo: https://myfibo.herokuapp.com/?sn=10. Its max input is 10, 000 as the host only has 512MB memory (Note: you might see a delay for the first request as it falls into sleep after 30 minutes idle time)
+Demo is available on Heroku: https://myfibo.herokuapp.com/?sn=10. The max input is 10, 000 as the host only has 512MB memory (Note: you might see a delay for the first request as it falls into sleep after 30 minutes idle time)
 
 ## Prerequisites and Run
 
-If you would like to install this service locally, Python 3+ and [Flask (0.1.2)](http://flask.pocoo.org/docs/0.12/installation/) are required. You might also want to use [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) to setup an isolated environment.
+If you would like to run this service locally, Python 3.4+ and [Flask (0.1.2)](http://flask.pocoo.org/docs/0.12/installation/) are required. 
+```
+pip install flask
+
+```
+You might also want to use [virtualenv](https://virtualenv.pypa.io/en/stable/installation/) to setup an isolated environment.
 
 Run FiboService locally is simple:
 ```
@@ -16,14 +21,19 @@ This will start service at 0.0.0.0:8888.
 
 You can use browswer or curl as client for try:
 ```
-# curl -k https://myfibo.herokuapp.com/?sn=20
+# curl -k http://127.0.0.1:8888/?sn=20
 ```
-Note: if input a large number like 100,000 for the first time, it's going to take 20 minutes to return. The time is spent on filling cache and the following requests will be fast (less than 10 seconds). 
+
+Note: The first request with large number like 100,000 is going to take 20 minutes to return. The time is spent on filling cache and the following requests will be fast (less than 10 seconds). 
+
+## Requirements
+The web service accepts a number, n, as input and returns the first n Fibonacci numbers, starting from 0. I.e. given n = 5, appropriate output would represent the sequence "0 1 1 2 3".
+Given a negative number, float or any non-numeric, it will respond with "400 Bad Request" and Error message
 
 ## Implementation Considerations
-Flask built-in server works in single process mode. What I implemented here is only applicapable for single process. We will discuss multi process and distributed solution in [More Ideas](#more ideas)
+Flask development server works in single process mode. What I implemented here is only applicapable for single process. We will discuss multi process and distributed solution in [More Ideas](#more ideas)
 
-The first version I did is very simple. I used a generator to generate each fibonacci value string and Flask send each one as response in streaming way. This works well for small input number like 10,000. When I tried 100,000. It took about 20 minutes, too bad!
+The first version I did is very simple. I used a generator to generate each fibonacci value string and Flask sends each one in streaming way. This works well for small input number like 10,000. When I tried 100,000. It took about 20 minutes, too bad!
 
 The tests below indicates the conversion from bignum to int is the performance killer:
 
@@ -42,7 +52,7 @@ if __name__ == '__main__':
     import cProfile
     cProfile.run('for n in generate_seq(100000): pass')
 ```
-1. This program with 100,000 as input took more than 10 minutes to finish. It's 1.45 seconds when I comments out the line of convertion.
+1. This program with 100,000 as input took more than 20 minutes to finish while it was 1.45 seconds when repalced the line with just returning number.
 2. to_str() takes most of time (from output of cProfile and 10,000 as input):
 
 ```
@@ -52,13 +62,13 @@ if __name__ == '__main__':
 
    ncalls  tottime  percall  cumtime  percall filename:lineno(function)
         1    0.002    0.002    1.114    1.114 <string>:1(<module>)
-    10000    1.094    0.000    1.094    0.000 test.py:26(to_str)        ##### to_str takes most of time 
+    10000    1.094    0.000    1.094    0.000 test.py:26(to_str)        ##### to_str takes 99% of time 
     10001    0.018    0.000    1.112    0.000 test.py:4(generate_seq)
         1    0.000    0.000    1.114    1.114 {built-in method exec}
         1    0.000    0.000    0.000    0.000 {method 'disable' of '_lsprof.Profiler' objects}```
 ```
 
-3. 0.031 seconds is taken for converting the fibonacci value of 100,000th number to a string:
+3. 0.031 seconds is taken for converting the fibonacci value of 100,000th number to a string. (0.03*100000 = 3000 seconds):
 ```
          4 function calls in 0.031 seconds
 
@@ -80,13 +90,13 @@ fibo_list: ['0', '1', '1', '2', '3', '5', ...]
 
 Everytime getting a request with input number, get each string from the cache directly and return to client until reaching input value. If required values are not in cache, populate them. 
 
-The first request of asking big number like 100,000 is still very slow but the following will be fast. 
+The first request of asking big number like 100,000 is still very slow (20 minutes) but the followings will be fast (6 seconds). 
 
-This works well for single process. The cons is:
-1. Not work for multiple processes we need to put this into shared memory. 
-2. It uses much memory
+This works well for single process. The drawback is:
+1. Cache locates within a process. Need to share with others.  
+2. Large memory usage might be an issue.
 
-This is what I implemented for now. There are other ways which might work bette in distributed environment and we will discuss it next. 
+This is what I implemented for now. There are other ways which might work better in distributed environment and we will discuss it next. 
 
 ## More Ideas
 
