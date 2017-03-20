@@ -105,7 +105,7 @@ Another way is caching the stream of sequence into disk and build a index table 
 ```
 file1:  0 1 1 2 3 5 8 13 21 34 55 89 ...        # separated by ' ' 
 
-Index table {0: 1, 1:2, 2: 4, 3: <offset>, ... }
+Index table: [offset1 for 0, offset2 for 1, ..., offsetn for number n]
 ```
 This way we can read file from the begining to the offset for input number directly. So no need to hold all data in memory. The index table takes much less memory. For example, holding 1M entries takes around 16MB 
 '''
