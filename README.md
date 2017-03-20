@@ -116,16 +116,16 @@ The performance of this should be fine, specially when the network bandwidth bet
 
 Both ways would help on performance. To extend that to multiple processes and multiple hosts environment, there are the following questions to think about:
 
-(The questions below are for the way of caching data on disk, fit for cache in memory though)
-
 For multiple processes:
 
-1. The data file on disk can be shared across processes. Need to find a way (multiprocessing.Manager.dict?) to hold index table and share across processes.  
+1. The data file on disk can be shared across processes. Need to find a way (multiprocessing.Array?) to hold index table and share across processes.  
 
 For multiple hosts:
-
-2. Suppose we need to support very big fibo sequence (say sn = 1,000, 000, 000) and single host can't deal with that alone. How should we split sequence to multiple hosts? If we want to split evenly by size, as the length of each fibonacci value is variable, how?
-3. What changes need to make for index table to support multiple hosts? 
-4. If we split sequence by range (e.g. 1-100, 101-200, ...) Could some of servers become hotspot? and how to resolve? 
-5. The cache could be pre-populated or filled on demand. Which one is better? 
+Suppose need to support very big fibo sequence (say sn = 1,000, 000, 000) and single host can't deal with that alone. 
+1. How should we partition sequence evenly to multiple hosts? 
+2. What index table would look like? 
+4. For each range, need replication for load balancing and failure tolerence. 
+5. What will happen if need to rebuild one or all ranges. (Impact on index table)
+6. Could a range be a hotspot and how to resolve it? 
+7. Pre populate cache vs fill on demand? 
 
