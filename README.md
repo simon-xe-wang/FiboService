@@ -125,7 +125,7 @@ Suppose need to support very big fibo sequence (say sn = 1,000, 000, 000) and si
 1. How should we partition sequence evenly to multiple hosts? 
 2. What index table would look like? 
 4. For each range, need replication for load balancing and failure tolerence. 
-5. What will happen if need to rebuild one or all ranges. (Impact on index table)
+5. What will happen if need to extend or shrink each range?
 6. Could a range be a hotspot and how to resolve it? 
 7. Pre populate cache vs fill on demand? 
 
