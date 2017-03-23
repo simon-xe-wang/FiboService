@@ -127,5 +127,6 @@ Suppose need to support very big fibo sequence (say sn = 1,000, 000, 000) and si
 4. For each range, need replication for load balancing and failure tolerence. 
 5. What will happen if need to extend or shrink each range?
 6. Could a range be a hotspot and how to resolve it? 
-7. Pre populate cache vs fill on demand? 
+7. How to handle node recovery or adding new node?
+8. Pre populate cache vs fill on demand? 
 
